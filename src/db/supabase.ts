@@ -17,8 +17,14 @@ function headers(prefer?: string) {
   };
 }
 
+function supabaseBaseUrl() {
+  return config.supabaseUrl
+    .replace(/\/$/, '')
+    .replace(/\/rest\/v1$/, '');
+}
+
 function buildUrl(path: string, query?: Record<string, QueryValue | undefined>) {
-  const url = new URL(`${config.supabaseUrl.replace(/\/$/, '')}/rest/v1/${path}`);
+  const url = new URL(`${supabaseBaseUrl()}/rest/v1/${path}`);
   for (const [key, value] of Object.entries(query ?? {})) {
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
@@ -65,7 +71,7 @@ export async function supabaseDelete(path: string, query: Record<string, QueryVa
 }
 
 export async function supabaseRpc<T>(fnName: string, body: unknown): Promise<T> {
-  const response = await fetch(`${config.supabaseUrl.replace(/\/$/, '')}/rest/v1/rpc/${fnName}`, {
+  const response = await fetch(`${supabaseBaseUrl()}/rest/v1/rpc/${fnName}`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify(body),
