@@ -23,6 +23,7 @@ create table if not exists messages (
   user_id uuid not null references users(id) on delete cascade,
   line_message_id text unique not null,
   content text not null,
+  processed_for_memory boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -54,6 +55,7 @@ create index if not exists messages_group_id_idx on messages(group_id);
 create index if not exists messages_user_id_idx on messages(user_id);
 create index if not exists messages_created_at_idx on messages(created_at desc);
 create index if not exists messages_line_message_id_idx on messages(line_message_id);
+create index if not exists messages_memory_processing_idx on messages(group_id, processed_for_memory, created_at);
 
 create index if not exists memories_group_id_idx on memories(group_id);
 create index if not exists memories_created_at_idx on memories(created_at desc);

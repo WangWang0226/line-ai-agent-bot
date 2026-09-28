@@ -1,11 +1,13 @@
-import { supabaseDelete, supabaseInsert, supabaseSelect } from '../db/supabase';
+import { supabaseDelete, supabaseInsert, supabasePatch, supabaseSelect } from '../db/supabase';
 
 type DbGroup = { id: string; line_group_id: string };
 type DbUser = { id: string; line_user_id: string };
 type DbMessage = {
   id: string;
+  user_id?: string;
   content: string;
   created_at: string;
+  processed_for_memory?: boolean;
   users?: { display_name: string | null; line_user_id: string } | null;
 };
 
@@ -41,6 +43,7 @@ export async function insertMessage(data: {
     user_id: data.userId,
     line_message_id: data.lineMessageId,
     content: data.content,
+    processed_for_memory: false,
   }, 'line_message_id');
   return rows[0] ?? null;
 }
@@ -78,4 +81,23 @@ export async function getMessageIdsPastGroupLimit(groupId: string, maxMessages: 
 export async function deleteMessagesByIds(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   await supabaseDelete('messages', { id: `in.(${ids.join(',')})` });
+}
+
+export async function getUnprocessedMessagesForMemory(groupId: string, limit: number): Promise<DbMessage[]> {
+  return supabaseSelect<DbMessage>('messages', {
+    select: 'id,user_id,content,created_at,users(display_name,line_user_id)',
+    group_id: `eq.${groupId}`,
+    processed_for_memory: 'eq.false',
+    order: 'created_at.asc',
+    limit,
+  });
+}
+
+export async function markMessagesProcessedForMemory(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  await supabasePatch('messages', {
+    id: `in.(${ids.join(',')})`,
+  }, {
+    processed_for_memory: true,
+  });
 }

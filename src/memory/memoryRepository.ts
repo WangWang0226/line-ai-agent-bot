@@ -37,6 +37,7 @@ export type SaveMemoryData = {
   category?: MemoryCategory;
   importance?: number;
   summary?: string;
+  sourceMessageIds?: string[];
 };
 
 export async function insertMemory(data: SaveMemoryData): Promise<MemoryRecord> {
@@ -49,6 +50,12 @@ export async function insertMemory(data: SaveMemoryData): Promise<MemoryRecord> 
     embedding: data.embedding,
     created_by: data.createdBy ?? null,
   });
+  if (data.sourceMessageIds?.length) {
+    await supabaseInsert('memory_sources', data.sourceMessageIds.map((messageId) => ({
+      memory_id: row.id,
+      message_id: messageId,
+    })));
+  }
   return toMemory(row);
 }
 

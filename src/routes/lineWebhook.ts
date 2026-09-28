@@ -6,6 +6,7 @@ import type { LineEvent, LineWebhookBody } from '../types/line';
 import { cleanupRawMessageHistory, loadRecentGroupMessages, storeLineMessage } from '../messages/messageService';
 import { searchMemory } from '../tools/memory/searchMemory';
 import { logger } from '../utils/logger';
+import { runAutomaticMemoryExtraction } from '../memory/memoryExtractor';
 
 function getLineGroupId(event: LineEvent): string | null {
   return event.source?.groupId ?? null;
@@ -59,6 +60,13 @@ export async function handleLineWebhook(req: Request & { rawBody?: string }, res
 
       cleanupRawMessageHistory(stored.groupDbId).catch((error) => {
         logger.error('raw message cleanup failed', {
+          groupId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+
+      runAutomaticMemoryExtraction(stored.groupDbId).catch((error) => {
+        logger.error('automatic memory extraction failed from webhook', {
           groupId,
           error: error instanceof Error ? error.message : String(error),
         });

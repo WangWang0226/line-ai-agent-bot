@@ -17,6 +17,7 @@ export async function saveGroupMemory(groupId: string, createdBy: string, input:
   content: string;
   category?: MemoryCategory;
   importance?: number;
+  sourceMessageIds?: string[];
 }): Promise<MemoryRecord> {
   const embedding = await createEmbedding(input.content);
 
@@ -42,6 +43,7 @@ export async function saveGroupMemory(groupId: string, createdBy: string, input:
     content: input.content,
     category: input.category,
     importance: input.importance,
+    sourceMessageIds: input.sourceMessageIds,
     embedding,
   });
 }

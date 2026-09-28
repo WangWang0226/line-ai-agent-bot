@@ -60,6 +60,8 @@ Implemented so far:
 - Supabase REST repositories and pgvector migration
 - webhook idempotency using `line_message_id`
 - safe LINE response splitting
+- automatic memory extraction from batches of raw group messages
+- memory deduplication before automatic saves
 - unit tests for mention detection, memory isolation, and invalid signature handling
 
 ## Next steps for you
@@ -79,8 +81,12 @@ Implemented so far:
    ```text
    supabase/migrations/001_initial_schema.sql
    ```
-4. Copy the project URL into `SUPABASE_URL`.
-5. Copy the service role key into `SUPABASE_SERVICE_ROLE_KEY`.
+4. If you created the database before automatic memory extraction was added, also run:
+   ```text
+   supabase/migrations/002_memory_extraction.sql
+   ```
+5. Copy the project URL into `SUPABASE_URL`.
+6. Copy the service role key into `SUPABASE_SERVICE_ROLE_KEY`.
 
 The migration uses `text-embedding-3-small`, which has 1536 dimensions. If you change `OPENAI_EMBEDDING_MODEL`, update both `OPENAI_EMBEDDING_DIMENSIONS` and the `vector(1536)` definitions in the migration.
 
@@ -110,3 +116,19 @@ gcloud run deploy line-memory-agent \
 ```
 
 Set secret values such as `OPENAI_API_KEY`, `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, and `SUPABASE_SERVICE_ROLE_KEY` through Secret Manager or Cloud Run environment configuration. Do not bake secrets into the Docker image.
+
+## Automatic memory extraction
+
+The app stores raw group messages separately from long-term memory. It periodically processes unhandled raw messages in batches, asks OpenAI to extract durable memories, deduplicates against existing memories, and saves only useful long-term facts.
+
+Useful environment values:
+
+```env
+MEMORY_EXTRACTION_ENABLED=true
+MEMORY_EXTRACTION_BATCH_SIZE=30
+MEMORY_EXTRACTION_MIN_MESSAGES=20
+MEMORY_EXTRACTION_DEDUPE_THRESHOLD=0.88
+OPENAI_EXTRACTION_MODEL=gpt-4.1-mini
+```
+
+Raw message cleanup does not delete long-term memories.
